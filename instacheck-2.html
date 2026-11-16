@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InstaCheck — la note de ton Insta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0b12; --panel:#17141f; --panel2:#201c2b; --line:#2e2940;
+  --txt:#f4f1fa; --mut:#a59fb8; --dim:#6f6984;
+  --pink:#ff3d8b; --orange:#ff9a3c; --violet:#8b5cf6; --lime:#c6f432; --red:#ff5468;
+  --grad:linear-gradient(120deg,#ff9a3c 0%,#ff3d8b 45%,#8b5cf6 100%);
+  --r:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;line-height:1.5;min-height:100vh;
+  background-image:radial-gradient(800px 400px at 85% -10%,rgba(139,92,246,.18),transparent 60%),radial-gradient(700px 400px at -10% 10%,rgba(255,61,139,.13),transparent 60%)}
+h1,h2,h3,.disp{font-family:"Bricolage Grotesque",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:28px 20px 80px}
+nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:56px}
+.logo{display:flex;align-items:center;gap:10px;font-family:"Bricolage Grotesque";font-weight:800;font-size:22px;letter-spacing:-.02em}
+.logo i{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;font-style:normal;font-size:18px}
+.pill{font-size:12px;color:var(--mut);border:1px solid var(--line);padding:6px 12px;border-radius:99px}
+.hero{text-align:center;margin-bottom:44px}
+.hero h1{font-size:clamp(38px,7vw,72px);line-height:1;letter-spacing:-.04em;font-weight:800}
+.hero h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mut);font-size:18px;max-width:560px;margin:18px auto 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+label.lb{display:block;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+input[type=text],textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px 14px;font:inherit;font-size:15px;outline:none;transition:border .15s}
+input[type=text]:focus,textarea:focus{border-color:var(--pink)}
+textarea{resize:vertical;min-height:120px}
+.field{margin-bottom:18px}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:26px 16px;text-align:center;cursor:pointer;transition:.15s;background:var(--panel2);height:calc(100% - 30px);display:flex;flex-direction:column;justify-content:center;min-height:200px}
+.drop:hover,.drop.over{border-color:var(--pink);background:#251f31}
+.drop b{font-size:15px}.drop small{color:var(--dim);display:block;margin-top:6px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center}
+.thumbs div{position:relative}
+.thumbs img{width:62px;height:62px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.thumbs button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:12px;cursor:pointer;line-height:1}
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.mode{flex:1;min-width:140px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:12px;padding:12px;cursor:pointer;text-align:left;font:inherit;transition:.15s}
+.mode strong{display:block;font-size:14px}.mode span{font-size:12px;color:var(--mut)}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:760px){.opts{grid-template-columns:1fr 1fr}}
+.opts .mode{min-width:0;padding:14px}.opts .mode em{font-style:normal;font-size:22px;display:block;margin-bottom:6px}
+#handle{font-size:18px;padding:16px}
+.mode.on{border-color:var(--pink);box-shadow:0 0 0 1px var(--pink) inset;background:#2a1a28}
+.go{margin-top:22px;width:100%;border:none;border-radius:14px;padding:17px;font:600 17px Inter;color:#fff;background:var(--grad);cursor:pointer;transition:transform .1s,opacity .15s}
+.go:hover{transform:translateY(-1px)}.go:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.note{font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center}
+.err{background:#2b1218;border:1px solid #5c2130;color:#ffb3bf;padding:14px 16px;border-radius:12px;margin-top:16px;font-size:14px;display:none}
+
+/* loading */
+#loading{display:none;text-align:center;padding:60px 20px}
+.spin{width:64px;height:64px;border-radius:50%;margin:0 auto 22px;background:conic-gradient(var(--pink),var(--violet),var(--orange),var(--pink));animation:r 1s linear infinite;-webkit-mask:radial-gradient(circle,transparent 24px,#000 25px);mask:radial-gradient(circle,transparent 24px,#000 25px)}
+@keyframes r{to{transform:rotate(360deg)}}
+#loadmsg{font-family:"Bricolage Grotesque";font-size:22px;font-weight:600}
+#stream{color:var(--dim);font-size:13px;margin-top:10px;max-height:60px;overflow:hidden}
+
+/* results */
+#result{display:none}
+.top{display:grid;grid-template-columns:260px 1fr;gap:18px;margin-bottom:18px}
+@media(max-width:760px){.top{grid-template-columns:1fr}}
+.scorebox{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring{position:relative;width:190px;height:190px}
+.ring svg{transform:rotate(-90deg)}
+.ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .num b{font-family:"Bricolage Grotesque";font-size:60px;font-weight:800;line-height:1}
+.ring .num small{color:var(--mut);font-size:14px}
+.tier{margin-top:14px;font-family:"Bricolage Grotesque";font-weight:800;font-size:20px;padding:6px 16px;border-radius:99px;display:inline-block}
+.verdict h2{font-size:30px;letter-spacing:-.02em;line-height:1.15;margin-bottom:10px}
+.verdict .handle{color:var(--pink);font-weight:600;font-size:14px;margin-bottom:6px}
+.verdict p{color:#d6d0e4}
+.cringe{margin-top:18px}
+.cringe .bar{height:12px;border-radius:99px;background:var(--panel2);overflow:hidden;border:1px solid var(--line)}
+.cringe .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--orange),var(--red));width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.cringe .row{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:6px}
+.sec-title{font-size:13px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin:30px 0 12px}
+.crit{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:760px){.crit{grid-template-columns:1fr 1fr}}
+.c{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.c .h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.c .h strong{font-size:14px}.c .h b{font-family:"Bricolage Grotesque";font-size:22px}
+.c .mini{height:6px;border-radius:9px;background:var(--panel2);overflow:hidden;margin-bottom:10px}
+.c .mini i{display:block;height:100%;border-radius:9px;width:0;transition:width 1s .2s}
+.c p{font-size:13px;color:var(--mut)}
+.flags{display:grid;gap:10px}
+.flag{display:flex;gap:12px;align-items:flex-start;background:#1e1219;border:1px solid #3d1e2b;border-radius:14px;padding:14px 16px}
+.flag em{font-style:normal;font-size:20px;line-height:1.2}
+.flag strong{display:block;font-size:14.5px}.flag span{font-size:13.5px;color:#d9b8c4}
+.tips{display:grid;gap:12px}
+.tip{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;grid-template-columns:auto 1fr;gap:14px}
+.tip .n{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;font-weight:800;font-family:"Bricolage Grotesque"}
+.tip strong{font-size:15.5px;display:block;margin-bottom:4px}
+.tip p{font-size:14px;color:#cfc9dd}
+.tip .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:2px}
+.t-urgent{background:#3b1520;color:#ff8ea0}.t-moyen{background:#3a2a12;color:#ffc27a}.t-bonus{background:#1d2d12;color:#c6f432}
+.good{display:flex;flex-wrap:wrap;gap:8px}
+.good span{background:#17240f;border:1px solid #2c4419;color:#d5f78a;padding:8px 12px;border-radius:99px;font-size:13.5px}
+.bio{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.bio{grid-template-columns:1fr}}
+.bio div small{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.bio pre{white-space:pre-wrap;font-family:inherit;font-size:14px;margin-top:6px;color:#e6e1f0}
+.bio .new pre{color:var(--lime)}
+.copy{margin-top:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 12px;border-radius:9px;cursor:pointer;font:500 12.5px Inter}
+.actions{display:flex;gap:10px;margin-top:30px;flex-wrap:wrap}
+.btn2{flex:1;border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:14px;border-radius:12px;font:600 15px Inter;cursor:pointer}
+.btn2.p{background:var(--grad);border:none}
+#history{margin-top:40px;display:none}
+.hist{display:flex;gap:10px;flex-wrap:wrap}
+.hist button{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:10px 14px;cursor:pointer;font:500 13.5px Inter}
+.hist button b{font-family:"Bricolage Grotesque";margin-left:6px}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:40px}
+@media(max-width:760px){.how{grid-template-columns:1fr}}
+.how div{padding:18px;border-radius:14px;border:1px solid var(--line);background:rgba(23,20,31,.6)}
+.how b{font-family:"Bricolage Grotesque";font-size:17px;display:block;margin-bottom:4px}
+.how span{font-size:13.5px;color:var(--mut)}
+.paybtn{display:inline-block;text-decoration:none;text-align:center;background:#635bff;color:#fff;font:600 15px Inter;padding:14px 22px;border-radius:12px;transition:transform .1s,background .15s;cursor:pointer}
+.paybtn:hover{background:#7a73ff;transform:translateY(-1px)}
+.paybtn.sm{font-size:13px;padding:8px 14px;border-radius:99px;background:var(--grad)}
+.premium{margin-top:40px;border-radius:var(--r);padding:28px;display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--grad) border-box;border:1.5px solid transparent}
+.premium h3{font-size:24px;letter-spacing:-.02em;margin:8px 0 10px;max-width:440px;line-height:1.15}
+.premium ul{list-style:none;color:var(--mut);font-size:14px}.premium li:before{content:"✓ ";color:var(--lime)}
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;padding:4px 10px;border-radius:99px;background:var(--grad)}
+.pricebox{text-align:center;display:flex;flex-direction:column;gap:10px;min-width:220px}
+.price{font-family:"Bricolage Grotesque";font-size:42px;font-weight:800}.price small{font-size:15px;color:var(--mut);font-weight:400}
+.secure{color:var(--dim);font-size:12px}
+.upsell{margin-top:30px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:#1a1730;border:1px solid #3a3470;border-radius:14px;padding:18px 20px}
+.upsell span{font-size:14.5px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:12px 18px;border-radius:12px;font-size:14px;display:none;z-index:9}
+a.logo{color:inherit;text-decoration:none}
+.home{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:99px;padding:9px 16px;font:600 13.5px Inter;cursor:pointer;margin-bottom:18px;position:relative;z-index:6}
+.home:hover{border-color:var(--pink)}
+footer{text-align:center;color:var(--dim);font-size:12px;margin-top:60px}
+footer a{color:var(--mut)}
+#result{position:relative}
+.locked .top,.locked .sec-title,.locked .crit,.locked .flags,.locked .good,.locked .tips,.locked .actions{filter:blur(12px);user-select:none;pointer-events:none}
+.paywall{position:absolute;left:50%;top:150px;transform:translateX(-50%);width:min(420px,92%);text-align:center;z-index:5;
+  background:rgba(23,20,31,.92);backdrop-filter:blur(6px);border-radius:var(--r);padding:30px 26px;box-shadow:0 30px 80px rgba(0,0,0,.6);
+  background-image:linear-gradient(rgba(23,20,31,.95),rgba(23,20,31,.95)),var(--grad);background-origin:border-box;background-clip:padding-box,border-box;border:1.5px solid transparent}
+.paywall .lock{font-size:40px}.paywall h3{font-size:28px;letter-spacing:-.02em;margin:6px 0 8px}
+.paywall p{color:var(--mut);font-size:14.5px;margin-bottom:14px}
+.paywall .paybtn{display:block;margin:12px 0 10px;font-size:17px;padding:16px}
+.paybar{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;justify-content:center;align-items:center;gap:16px;padding:14px 20px;
+  background:rgba(13,11,18,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line)}
+.paybar span{font-size:14.5px;font-weight:600}.paybar .paybtn{padding:11px 28px}
+#result:not(.locked) .paybar{display:none}
+.thanks{text-align:center;max-width:720px;margin:0 auto}
+.confetti{font-size:64px;margin-bottom:10px;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.thanks h1{font-size:clamp(32px,5vw,50px);letter-spacing:-.03em;line-height:1.05;margin:14px 0 12px}
+.thanks>p{color:var(--mut);font-size:17px}
+.unlocked{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:30px 0 8px;text-align:left}
+@media(max-width:760px){.unlocked{grid-template-columns:1fr}}
+.unlocked div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.unlocked em{font-style:normal;font-size:24px;display:block;margin-bottom:8px}
+.unlocked b{display:block;font-size:15px}.unlocked span{font-size:13px;color:var(--mut)}
+.probadge{font-size:12px;font-weight:700;letter-spacing:.08em;padding:8px 14px;border-radius:99px;background:var(--grad)}
+.modal{position:fixed;inset:0;background:rgba(5,4,8,.75);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:20}
+.modal.on{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);max-width:640px;width:100%;padding:30px;position:relative}
+.mbox h2{font-size:26px;margin-bottom:12px}.mbox h4{font-size:15px;margin:18px 0 4px}
+.mbox p{font-size:14px;color:#cfc9dd}
+.mnote{background:var(--panel2);border-left:3px solid var(--pink);padding:10px 14px;border-radius:8px;color:var(--txt)!important}
+.mclose{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--mut);font-size:26px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="logo" href="#" id="logo"><i>✦</i>InstaCheck</a>
+    <a class="paybtn sm" data-pay href="#">Payer</a>
+  </nav>
+
+  <section id="form">
+    <div class="hero">
+      <h1>Ton Insta est-il <span>gênant&nbsp;?</span></h1>
+      <p>Entre ton pseudo. InstaCheck te met une note sur 100, repère ce qui fait cringe et te dit quoi changer.</p>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label class="lb" for="handle">Pseudo Instagram</label>
+        <input type="text" id="handle" placeholder="@tonpseudo" autocomplete="off">
+      </div>
+      <label class="lb" style="margin-top:6px">Comment tu veux qu'on analyse ton Insta&nbsp;?</label>
+      <div class="opts" id="modes">
+        <button class="mode on" data-m="complet"><em>🔍</em><strong>Analyse complète</strong><span>Tout le profil passé au crible</span></button>
+        <button class="mode" data-m="roast"><em>🔥</em><strong>Roast</strong><span>Ça pique. Tu l'as demandé.</span></button>
+        <button class="mode" data-m="esthetique"><em>🎨</em><strong>Esthétique du feed</strong><span>Couleurs, filtres, cohérence</span></button>
+        <button class="mode" data-m="influence"><em>🚀</em><strong>Potentiel influenceur</strong><span>Peux-tu percer ?</span></button>
+        <button class="mode" data-m="impression"><em>👀</em><strong>Première impression</strong><span>Ce qu'on pense en 3 secondes</span></button>
+        <button class="mode" data-m="crush"><em>💘</em><strong>Test du crush</strong><span>Ton profil donne-t-il envie de follow ?</span></button>
+      </div>
+
+
+      <button class="go" id="go">Analyser le profil</button>
+      <div class="err" id="err"></div>
+    </div>
+
+    <div class="how">
+      <div><b>1. Ton pseudo</b><span>Entre ton @ et choisis comment tu veux être analysé.</span></div>
+      <div><b>2. Ta note</b><span>6 critères notés : bio, photo, cohérence, légendes, stories, authenticité.</span></div>
+      <div><b>3. Plan d'action</b><span>Les red flags à virer et les conseils classés par priorité.</span></div>
+    </div>
+
+    <div class="premium">
+      <div>
+        <div class="badge">PREMIUM</div>
+        <h3>Analyses illimitées + suivi de ta progression</h3>
+        <ul><li>Analyses illimitées, tous les modes</li><li>Comparaison avant / après</li><li>Mode Roast sans limite</li></ul>
+      </div>
+      <div class="pricebox">
+        <div class="price">2,99&nbsp;€<small>/mois</small></div>
+        <a class="paybtn" data-pay href="#">Payer</a>
+        <small class="secure">🔒 Paiement sécurisé par Stripe</small>
+      </div>
+    </div>
+
+    <div id="history">
+      <div class="sec-title">Tes analyses récentes</div>
+      <div class="hist" id="hist"></div>
+    </div>
+  </section>
+
+  <section id="loading">
+    <div class="spin"></div>
+    <div id="loadmsg">Scroll du feed en cours…</div>
+    <div id="stream"></div>
+  </section>
+
+  <section id="result"></section>
+
+  <section id="merci" style="display:none">
+    <div class="thanks">
+      <div class="confetti">🎉</div>
+      <div class="badge">PREMIUM ACTIVÉ</div>
+      <h1>Bienvenue dans InstaCheck Premium&nbsp;!</h1>
+      <p>Ton paiement de <b>2,99&nbsp;€</b> est confirmé. Tu vas recevoir le reçu de Stripe par e-mail.</p>
+      <div class="unlocked">
+        <div><em>♾️</em><b>Analyses illimitées</b><span>Plus aucune limite, tous les modes</span></div>
+        <div><em>📈</em><b>Suivi de progression</b><span>Compare ta note avant / après</span></div>
+        <div><em>🔥</em><b>Roast sans limite</b><span>Fais-toi roaster autant que tu veux</span></div>
+      </div>
+      <button class="go" id="startpremium">Lancer ma première analyse Premium</button>
+      <p class="note">Abonnement de 2,99 €/mois, résiliable à tout moment depuis le lien dans ton reçu Stripe.</p>
+    </div>
+  </section>
+
+  <footer>© 2026 InstaCheck · <a href="#" id="opencgv">CGV</a> · <a href="#" id="demo">Voir un exemple de résultat</a></footer>
+</div>
+
+<div class="modal" id="cgv">
+  <div class="mbox">
+    <button class="mclose" id="closecgv">×</button>
+    <h2>Conditions générales de vente</h2>
+    <p class="mnote">InstaCheck · un test pour le fun, pas une vérité absolue. Sois cool avec les autres.</p>
+    <h4>1. Objet</h4>
+    <p>InstaCheck est un test de divertissement. À partir du pseudo saisi, il génère automatiquement une note et des conseils humoristiques. Le résultat ne repose pas sur une analyse réelle du compte Instagram et n'a qu'une valeur divertissante.</p>
+    <h4>2. Prix et paiement</h4>
+    <p>L'offre Premium est proposée au prix de 2,99&nbsp;€ TTC par mois. Le paiement est traité par Stripe ; InstaCheck n'a jamais accès à tes données bancaires. L'abonnement est reconduit chaque mois jusqu'à résiliation.</p>
+    <h4>3. Résiliation et rétractation</h4>
+    <p>Tu peux résilier à tout moment, la résiliation prenant effet à la fin de la période en cours. En accédant immédiatement au service numérique, tu reconnais renoncer à ton droit de rétractation de 14 jours (art. L221-28 du Code de la consommation).</p>
+    <h4>4. Utilisation responsable</h4>
+    <p>Tu t'engages à n'analyser que des profils publics et à ne pas utiliser les résultats pour harceler ou humilier qui que ce soit.</p>
+    <h4>5. Données</h4>
+    <p>Le pseudo saisi sert uniquement à générer le résultat et n'est envoyé nulle part. L'historique est stocké uniquement dans ton navigateur. L'historique des analyses est stocké uniquement dans ton navigateur.</p>
+    <h4>6. Responsabilité</h4>
+    <p>Les notes et conseils sont générés pour le fun. InstaCheck ne saurait être tenu responsable des décisions prises sur la base de ces résultats.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+// ===== STRIPE : colle ici ton Payment Link (Stripe > Produits > Liens de paiement) =====
+const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/REMPLACE_MOI";
+// =======================================================================================
+
+const $ = s => document.querySelector(s);
+const payReady = !STRIPE_PAYMENT_LINK.includes("REMPLACE_MOI");
+function wirePay(root=document){
+  root.querySelectorAll("[data-pay]").forEach(a => {
+    if (payReady){ a.href = STRIPE_PAYMENT_LINK; a.target = "_blank"; a.rel = "noopener"; }
+    else a.onclick = e => { e.preventDefault(); toast("Le lien de paiement Stripe n'est pas encore configuré."); };
+  });
+}
+function toast(m){ const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",2600); }
+wirePay();
+let mode = "complet", lastResult = null;
+
+// ---- Générateur de résultats (aléatoire, pour le fun) : même pseudo + même option = même résultat
+function seeded(str){ let h=1779033703^str.length; for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+  return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); h^=h>>>16; return (h>>>0)/4294967296; }; }
+const BANK = {
+  tiers: [[0,"Alerte cringe"],[25,"Phase 2016"],[40,"Peut mieux faire"],[55,"Ça passe"],[70,"Profil propre"],[85,"Main character"]],
+  titres: {
+    bas: ["Le feed d'un compte qui n'a pas choisi sa vie","On sent l'effort, on ne sent pas le résultat","Un profil qui crie « j'ai découvert les filtres hier »","Ça scroll, ça grince, ça fait mal","Le musée des posts qu'on aurait dû archiver"],
+    moyen: ["Des vibes, mais lesquelles ?","Pas gênant, pas mémorable non plus","Le potentiel est là, la direction un peu moins","Propre en surface, brouillon dans les détails","Un bon début qui cherche encore son style"],
+    haut: ["Un profil qui sait exactement ce qu'il fait","Ça respire la confiance (sans forcer)","Clean, cohérent, on follow direct","Le genre de feed qu'on montre en exemple","Main character energy, version maîtrisée"]
+  },
+  resumes: {
+    bas: ["Le profil part dans tous les sens : citations motivantes, selfies miroir et memes recyclés se battent sur la même grille. La bio en dit trop et rien à la fois.","Entre les filtres qui changent à chaque post et les légendes en mode « vibes ✨ », difficile de savoir qui se cache derrière. Il y a du ménage à faire.","On a l'impression de lire un journal intime de 2016 resté en public. Rien de grave, mais un bon tri s'impose."],
+    moyen: ["Le profil tient la route, mais il manque une vraie identité. Quelques posts tirent l'ensemble vers le haut, d'autres le plombent.","Rien de vraiment gênant, mais rien qui donne envie de rester. Avec un peu de cohérence, ça peut vite décoller.","La base est bonne : de vraies photos, un peu de personnalité. Il reste à harmoniser le tout et à alléger la bio."],
+    haut: ["Feed cohérent, bio claire, légendes qui ont du sens : le profil donne envie de follow. Il reste quelques détails à peaufiner pour être parfait.","On sent une vraie direction artistique sans que ça fasse catalogue. Bel équilibre entre authenticité et soin.","Un profil maîtrisé qui raconte quelque chose. Les rares faux pas sont faciles à corriger."]
+  },
+  criteres: {
+    "Bio": ["Cinq emojis, deux citations et « DM pour collab » sans rien à proposer.","Courte et claire, on comprend qui tu es en deux secondes.","La bio tient en une phrase de film, mais on ne sait toujours pas qui tu es.","Le lien en bio mène vers un Linktree vide, dommage.","Un bon équilibre entre humour et infos utiles."],
+    "Photo de profil": ["Bonne lumière, mais le recadrage coupe la moitié du cadre.","Nette, bien cadrée, reconnaissable même en petit.","Une photo de groupe : on ne sait pas lequel c'est toi.","Le fond est chargé, ça se perd dans le petit rond.","Simple et efficace, rien à redire."],
+    "Cohérence du feed": ["Trois filtres différents sur les neuf derniers posts.","Une vraie palette de couleurs qui revient, bien joué.","Le feed alterne memes, paysages et selfies sans logique.","Plutôt harmonieux, quelques posts détonnent un peu.","On reconnaît ton style au premier coup d'œil."],
+    "Légendes": ["« Vibes ✨ » sous quatre posts d'affilée : on a compris.","Des légendes qui racontent quelque chose, on lit jusqu'au bout.","Trente hashtags sous un selfie, c'est trop.","Un mélange de citations Pinterest et de légendes vides.","Courtes, drôles, ça colle bien au ton du profil."],
+    "Stories & highlights": ["Highlights clairs avec des couvertures assorties.","Douze highlights « 🌸 » sans titre, impossible de s'y retrouver.","Aucun highlight : le profil manque un peu de vie.","Bien rangés, mais certains datent de trois ans.","Ils donnent vraiment envie de cliquer."],
+    "Authenticité": ["Les photos de voyage sonnent vrai, les posts « grindset » beaucoup moins.","On sent une vraie personne derrière l'écran.","Ça ressemble un peu trop à un catalogue de marque.","Quelques posts très mis en scène cassent le côté naturel.","Naturel sans être négligé, c'est l'idéal."]
+  },
+  flags: [["🧘","Les citations motivantes","Des posts texte sur fond dégradé : ça fait page Facebook de 2014."],["📍","Le check-in à la salle","Six fois en un mois, le message est passé."],["#️⃣","Le mur de hashtags","Trente hashtags sous un selfie, c'est le signe qui ne trompe pas."],["🪞","Le selfie miroir en boucle","Même miroir, même pose, posts différents."],["🌅","Le filtre Valencia","Il a eu son heure de gloire, elle est passée."],["💬","« DM pour collab »","Sans rien à proposer, ça sonne un peu vide."],["🔁","Les memes recyclés","Déjà vus trois fois cette semaine ailleurs."],["😎","Les lunettes de soleil partout","On aimerait voir tes yeux au moins une fois."],["📸","La photo floue assumée","Le côté « artistique » ne passe pas toujours."],["🎵","Les paroles de chanson en légende","Un post sur deux, c'est beaucoup."]],
+  forts: ["Highlights bien rangés","Vraies photos de voyage","Publie régulièrement","Bio claire","Bonne qualité d'image","Un vrai style perso","Légendes drôles","Photo de profil nette"],
+  conseils: [["Archive les posts qui ne te ressemblent plus","Garde-les en archive plutôt que de les supprimer : la grille respire tout de suite.","urgent"],["Choisis un seul filtre","Applique le même preset partout pendant un mois pour créer une vraie cohérence.","urgent"],["Réécris la bio en une ligne","Qui tu es + ce qu'on trouve ici. Deux emojis maximum.","urgent"],["Supprime 80 % des hashtags","Trois à cinq hashtags précis valent mieux que trente génériques.","moyen"],["Change ta photo de profil","Visage bien centré, fond simple, lumière naturelle.","moyen"],["Range tes highlights","Cinq maximum, avec des titres clairs et des couvertures assorties.","moyen"],["Écris de vraies légendes","Une anecdote ou une question, pas juste un emoji.","bonus"],["Poste moins mais mieux","Un beau post par semaine vaut plus que trois posts moyens.","bonus"],["Ose un post plus perso","Un moment vrai, pas mis en scène : c'est souvent celui qui marche le mieux.","bonus"]]
+};
+function fakeAnalysis(pseudo, m){
+  const r = seeded(pseudo.toLowerCase() + "|" + m), pick = a => a[Math.floor(r()*a.length)];
+  const shuffle = a => a.map(x=>[r(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
+  const score = 18 + Math.floor(r()*75), lvl = score < 40 ? "bas" : score < 70 ? "moyen" : "haut";
+  const tier = BANK.tiers.filter(t => score >= t[0]).pop()[1];
+  const criteres = Object.keys(BANK.criteres).map(nom => ({ nom, note: Math.max(1, Math.min(10, Math.round(score/10 + (r()*4-2)))), commentaire: pick(BANK.criteres[nom]) }));
+  const ordre = {urgent:0,moyen:1,bonus:2};
+  return {
+    score, tier, titre: pick(BANK.titres[lvl]), resume: pick(BANK.resumes[lvl]),
+    cringe: Math.max(5, Math.min(95, 100 - score + Math.floor(r()*20-10))),
+    criteres,
+    red_flags: shuffle(BANK.flags).slice(0, score < 40 ? 4 : score < 70 ? 3 : 2).map(([emoji,titre,detail]) => ({emoji,titre,detail})),
+    points_forts: shuffle(BANK.forts).slice(0, score < 40 ? 2 : 3),
+    conseils: shuffle(BANK.conseils).slice(0, 5).map(([titre,detail,priorite]) => ({titre,detail,priorite})).sort((a,b)=>ordre[a.priorite]-ordre[b.priorite]),
+    _handle: "@" + pseudo, _mode: m
+  };
+}
+
+// ---- modes
+$("#modes").onclick = e => { const b = e.target.closest(".mode"); if(!b) return;
+  document.querySelectorAll(".mode").forEach(x=>x.classList.remove("on")); b.classList.add("on"); mode = b.dataset.m; };
+
+// ---- run
+const MSGS = ["Scroll du feed en cours…","Lecture de la bio ligne par ligne…","Comptage des emojis suspects…","Analyse des filtres Valencia…","Détection des légendes motivantes…","Calcul du niveau de cringe…","Rédaction des conseils…"];
+let msgTimer;
+$("#go").onclick = run;
+
+async function run(){
+  const err = $("#err"); err.style.display = "none";
+  const handle = $("#handle").value.trim();
+  const clean = handle.replace(/^@/,"").replace(/^https?:\/\/(www\.)?instagram\.com\//,"").replace(/\/.*$/,"");
+  if (!/^[a-zA-Z0-9._]{1,30}$/.test(clean)){ showErr("Entre un pseudo Instagram valide."); return; }
+  $("#form").style.display = "none"; $("#loading").style.display = "block"; $("#result").style.display = "none";
+  let i = 0; $("#loadmsg").textContent = MSGS[0];
+  msgTimer = setInterval(()=>{ i=(i+1)%MSGS.length; $("#loadmsg").textContent = MSGS[i]; }, 2200);
+  window.scrollTo({top:0,behavior:"smooth"});
+
+  try{
+    await new Promise(r => setTimeout(r, 3200 + Math.random()*1500));
+    const data = fakeAnalysis(clean, mode);
+    clearInterval(msgTimer);
+    lastResult = data; saveHistory(data);
+    render(data);
+  }catch(e){
+    clearInterval(msgTimer);
+    $("#loading").style.display = "none"; $("#form").style.display = "block";
+    showErr(e && e.message ? e.message : "Oups, l'analyse a échoué. Réessaie.");
+  }
+}
+function goHome(e){
+  if (e && e.preventDefault) e.preventDefault();
+  clearInterval(msgTimer);
+  ["#result","#loading","#merci"].forEach(id => $(id).style.display="none");
+  $("#result").classList.remove("locked");
+  $("#form").style.display="block"; $("#handle").value=""; $("#err").style.display="none";
+  if (location.hash) history.replaceState(null,"",location.pathname);
+  renderHistory(); window.scrollTo({top:0});
+}
+$("#logo").onclick = goHome;
+function showErr(m){ const e=$("#err"); e.textContent=m; e.style.display="block"; }
+
+// ---- render
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function color(score){ return score>=75? "#c6f432" : score>=55? "#ffc24a" : score>=35? "#ff9a3c" : "#ff5468"; }
+function isPremium(){ try{ return localStorage.getItem("instacheck_premium")==="1"; }catch(e){ return false; } }
+// Version factice du résultat : quand c'est verrouillé, les vraies notes ne sont même pas dans la page
+function scramble(d){
+  const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+  const fake = s => String(s||"").replace(/[^\s]/g, () => "abcdefghijklmnoprstuv"[r(0,20)]);
+  return {...d, _handle:fake(d._handle), titre:fake(d.titre), score:r(20,90), tier:fake(d.tier), resume:fake(d.resume), cringe:r(10,90),
+    criteres:(d.criteres||[]).map(c=>({nom:c.nom, note:r(1,9), commentaire:fake(c.commentaire)})),
+    red_flags:(d.red_flags||[]).map(f=>({emoji:"🚩", titre:fake(f.titre), detail:fake(f.detail)})),
+    points_forts:(d.points_forts||[]).map(fake),
+    conseils:(d.conseils||[]).map(t=>({titre:fake(t.titre), detail:fake(t.detail), priorite:t.priorite}))};
+}
+function render(real){
+  $("#loading").style.display = "none"; $("#form").style.display = "none"; $("#merci").style.display = "none";
+  const R = $("#result"); R.style.display = "block";
+  const locked = !isPremium() && !real._demo;
+  const d = locked ? scramble(real) : real;
+  const sc = Math.max(0,Math.min(100,Math.round(d.score))), col = color(sc), circ = 2*Math.PI*82;
+  const crit = (d.criteres||[]).map(c => {
+    const n = Math.max(0,Math.min(10,c.note|0));
+    return `<div class="c"><div class="h"><strong>${esc(c.nom)}</strong><b style="color:${color(n*10)}">${n}<small style="font-size:13px;color:var(--dim)">/10</small></b></div>
+    <div class="mini"><i data-w="${n*10}" style="background:${color(n*10)}"></i></div><p>${esc(c.commentaire)}</p></div>`;}).join("");
+  const flags = (d.red_flags||[]).map(f=>`<div class="flag"><em>${esc(f.emoji||"🚩")}</em><div><strong>${esc(f.titre)}</strong><span>${esc(f.detail)}</span></div></div>`).join("");
+  const order = {urgent:0,moyen:1,bonus:2};
+  const tips = [...(d.conseils||[])].sort((a,b)=>(order[a.priorite]??1)-(order[b.priorite]??1)).map((t,i)=>{
+    const p = ["urgent","moyen","bonus"].includes(t.priorite)? t.priorite : "moyen";
+    return `<div class="tip"><div class="n">${i+1}</div><div><strong>${esc(t.titre)}<span class="tag t-${p}">${p}</span></strong><p>${esc(t.detail)}</p></div></div>`;}).join("");
+  const good = (d.points_forts||[]).map(g=>`<span>✓ ${esc(g)}</span>`).join("");
+
+  R.innerHTML = `
+  <button class="home" id="home">← Retour à l'accueil</button>
+  <div class="top">
+    <div class="card scorebox">
+      <div class="ring">
+        <svg width="190" height="190"><circle cx="95" cy="95" r="82" fill="none" stroke="#2a2537" stroke-width="14"/>
+        <circle id="arc" cx="95" cy="95" r="82" fill="none" stroke="${col}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" style="transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)"/></svg>
+        <div class="num"><b id="scn" style="color:${col}">0</b><small>/ 100</small></div>
+      </div>
+      <div class="tier" style="background:${col}22;color:${col}">${esc(d.tier)}</div>
+    </div>
+    <div class="card verdict">
+      ${d._handle? `<div class="handle">${esc(d._handle.startsWith("@")?d._handle:"@"+d._handle)}</div>`:""}
+      <h2>${esc(d.titre)}</h2>
+      <p>${esc(d.resume)}</p>
+      <div class="cringe"><div class="row"><span>Cringe-o-mètre</span><span><b>${Math.round(d.cringe||0)}</b>%</span></div><div class="bar"><i data-w="${Math.round(d.cringe||0)}"></i></div></div>
+    </div>
+  </div>
+  <div class="sec-title">📊 Le détail</div><div class="crit">${crit}</div>
+  ${flags? `<div class="sec-title">🚩 Ce qui fait gênant</div><div class="flags">${flags}</div>`:""}
+  ${good? `<div class="sec-title">💚 À garder</div><div class="good">${good}</div>`:""}
+  <div class="sec-title">🛠️ Ton plan pour arrêter d'avoir un Insta gênant</div><div class="tips">${tips}</div>
+  ${locked ? "" : `<div class="upsell"><span>🚀 Tu veux suivre ta progression et des analyses illimitées&nbsp;?</span><a class="paybtn" data-pay href="#">Payer</a></div>`}
+  <div class="actions">
+    ${locked ? "" : `<button class="btn2" id="share">Copier mon résultat</button>`}
+    <button class="btn2 p" id="again">Analyser un autre profil</button>
+  </div>
+  ${locked ? `<div class="paywall">
+    <div class="lock">🔒</div>
+    <h3>Ton résultat est prêt</h3>
+    <p>Paie pour voir ta note et tes conseils.</p>
+    <div class="price">2,99&nbsp;€<small>/mois</small></div>
+    <a class="paybtn" data-pay href="#">Payer</a>
+    <small class="secure">🔒 Paiement sécurisé par Stripe · résiliable à tout moment</small>
+  </div>
+  <div class="paybar"><span>🔒 Ton résultat est prêt</span><a class="paybtn" data-pay href="#">Payer</a></div>` : ""}`;
+  R.classList.toggle("locked", locked);
+
+  wirePay(R);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    $("#arc").style.strokeDashoffset = circ*(1-sc/100);
+    R.querySelectorAll("[data-w]").forEach(el=>el.style.width = el.dataset.w+"%");
+  }));
+  let k=0; const t0=performance.now(); (function tick(t){ k=Math.min(1,(t-t0)/1300); $("#scn").textContent=Math.round(sc*(1-Math.pow(1-k,3))); if(k<1) requestAnimationFrame(tick); })(t0);
+
+  $("#again").onclick = goHome;
+  $("#home").onclick = goHome;
+  if (!locked) $("#share").onclick = e => copy(`InstaCheck ${d._handle||""} : ${sc}/100 — ${d.tier}\n"${d.titre}"\nCringe-o-mètre : ${Math.round(d.cringe||0)}%`, e.target, "Résultat copié ✓");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+async function copy(txt, btn, ok){
+  try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent=ok; setTimeout(()=>btn.textContent=o,1600);}catch(e){ btn.textContent="Copie impossible"; }
+}
+
+// ---- local history (this browser only)
+function getHist(){ try{ return JSON.parse(localStorage.getItem("instacheck_h")||"[]"); }catch(e){ return []; } }
+function saveHistory(d){ try{ const h=getHist(); h.unshift({...d,_t:Date.now()}); localStorage.setItem("instacheck_h",JSON.stringify(h.slice(0,6))); }catch(e){} }
+function renderHistory(){
+  const h = getHist(); if(!h.length){ $("#history").style.display="none"; return; }
+  $("#history").style.display="block";
+  $("#hist").innerHTML = h.map((x,i)=>`<button data-i="${i}">${esc(x._handle||"Profil")}<b style="color:${color(x.score)}">${Math.round(x.score)}</b></button>`).join("");
+  $("#hist").onclick = e => { const b=e.target.closest("button"); if(b) render(h[+b.dataset.i]); };
+}
+renderHistory();
+
+// ---- CGV
+$("#opencgv").onclick = e => { e.preventDefault(); $("#cgv").classList.add("on"); };
+$("#closecgv").onclick = () => $("#cgv").classList.remove("on");
+$("#cgv").onclick = e => { if (e.target.id === "cgv") $("#cgv").classList.remove("on"); };
+
+// ---- exemple de résultat (données fictives)
+const DEMO = {_demo:true, _handle:"@exemple.compte", _mode:"franc", score:47, tier:"Phase 2016", cringe:68,
+ titre:"Le feed d'un compte qui n'a pas choisi sa vie",
+ resume:"Il y a du potentiel, mais le profil part dans tous les sens : citations motivantes, selfies miroir et memes recyclés se battent sur la même grille. La bio en dit trop et rien à la fois.",
+ criteres:[
+  {nom:"Bio",note:3,commentaire:"Cinq emojis, deux citations et « DM pour collab » sans rien à proposer."},
+  {nom:"Photo de profil",note:6,commentaire:"Bonne lumière, mais le recadrage coupe la moitié du visage dans le rond."},
+  {nom:"Cohérence du feed",note:4,commentaire:"Trois filtres différents sur les neuf derniers posts, aucune palette commune."},
+  {nom:"Légendes",note:3,commentaire:"« Vibes ✨ » sous quatre posts d'affilée : on a compris."},
+  {nom:"Stories & highlights",note:7,commentaire:"Highlights clairs avec des couvertures assorties, le meilleur point du profil."},
+  {nom:"Authenticité",note:5,commentaire:"Les photos de voyage sonnent vrai, les posts « grindset » beaucoup moins."}],
+ red_flags:[
+  {emoji:"🧘",titre:"Les citations motivantes",detail:"Trois posts texte sur fond dégradé : ça fait page Facebook de 2014."},
+  {emoji:"📍",titre:"Le check-in à la salle de sport",detail:"Six fois en un mois, le message est passé."},
+  {emoji:"#️⃣",titre:"Le mur de hashtags",detail:"Trente hashtags sous un selfie, c'est le signe qui ne trompe pas."}],
+ points_forts:["Highlights bien rangés","Vraies photos de voyage","Publie régulièrement"],
+ conseils:[
+  {titre:"Archive les citations motivantes",detail:"Garde-les en story si tu y tiens, mais sors-les de la grille. Ça nettoie le profil en deux minutes.",priorite:"urgent"},
+  {titre:"Choisis un seul filtre",detail:"Prends le preset de tes photos de voyage et applique-le partout pendant un mois.",priorite:"urgent"},
+  {titre:"Réécris la bio en une ligne",detail:"Qui tu es + ce qu'on trouve ici. Deux emojis maximum.",priorite:"moyen"},
+  {titre:"Supprime 80 % des hashtags",detail:"Trois à cinq hashtags précis valent mieux que trente génériques.",priorite:"moyen"},
+  {titre:"Des légendes avec une vraie phrase",detail:"Une anecdote ou une question, pas juste un emoji.",priorite:"bonus"}]};
+$("#demo").onclick = e => { e.preventDefault(); render(DEMO); };
+if (location.hash === "#exemple") render(DEMO);
+
+// ---- retour après paiement Stripe (Payment Link → "Après le paiement" → rediriger vers <url du site>#merci)
+function setPremiumUI(){
+  document.querySelectorAll("nav [data-pay]").forEach(a => { const s=document.createElement("span"); s.className="probadge"; s.textContent="✦ PREMIUM"; a.replaceWith(s); });
+  document.querySelectorAll(".premium").forEach(p => p.style.display="none");
+}
+function showMerci(){
+  try{ localStorage.setItem("instacheck_premium","1"); }catch(e){}
+  setPremiumUI();
+  $("#form").style.display="none"; $("#result").style.display="none"; $("#merci").style.display="block";
+  const last = getHist()[0];
+  $("#startpremium").textContent = last ? "Voir mon résultat débloqué" : "Lancer ma première analyse Premium";
+}
+$("#startpremium").onclick = () => {
+  history.replaceState(null,"",location.pathname);
+  const last = getHist()[0];
+  if (last) { render(last); return; }
+  $("#merci").style.display="none"; $("#form").style.display="block"; window.scrollTo({top:0});
+};
+try{ if (localStorage.getItem("instacheck_premium")==="1") setPremiumUI(); }catch(e){}
+if (location.hash === "#merci") showMerci();
+window.addEventListener("hashchange", () => { if (location.hash === "#merci") showMerci(); });
+</script>
+</body>
+</html>
